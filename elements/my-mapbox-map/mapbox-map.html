@@ -1,0 +1,167 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<script src="../../bower_components/mapbox.js/mapbox.js"></script>
+<link href='../../bower_components/mapbox.js/mapbox.css' rel='stylesheet' />
+
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+
+
+<dom-module id="mapbox-map">
+    <template>
+        <style>
+        :host {
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto';
+        }
+        
+        #map {
+            /*position: absolute;*/
+            display: block;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+            height: 700px;
+            /*width: 500px;*/
+            /*height: 500px;*/
+        }
+        
+        paper-menu {
+            padding: 10px;
+        }
+        
+        paper-toolbar {
+            background-color: #fff;
+        }
+        
+        paper-button {
+            color: #fff;
+            background-color: tomato;
+            /*height: 40px;*/
+            font-size: 12px;
+        }
+        </style>
+        <div class="layout vertical">
+            <paper-toolbar>
+                <paper-dropdown-menu class="flex" label="Map Layer">
+                    <paper-material class="dropdown-content">
+                        <paper-menu selected="{{myLayer}}" attr-for-selected="name">
+                            <div name="mapbox.outdoors">Outdoors</div>
+                            <div name="mapbox.satellite">Satellite</div>
+                            <div name="mapbox.streets">Streets</div>
+                            <!-- <div name="examples.bird-species">Birds</div> -->
+                            <div name="examples.location-formatter">Locations</div>
+                        </paper-menu>
+                    </paper-material>
+                </paper-dropdown-menu>
+                <paper-input label="Latitude" value={{lat}}></paper-input>
+                <paper-input label="Longitude" value={{lon}}></paper-input>
+                <paper-button on-tap=addMarker>add Marker</paper-button>
+                <paper-button on-tap=fitBounds>fit</paper-button>
+            </paper-toolbar>
+            <div class="flex" id='map'></div>
+        </div>
+    </template>
+</dom-module>
+
+<script>
+Polymer({
+    is: 'mapbox-map',
+
+    properties: {
+        myLayer: {
+            type: String,
+            value: 'mapbox.outdoors',
+            observer: 'layerChanged'
+        },
+        lon: {
+            type: Number,
+            value: 8.666948,
+            observer: 'markerChange'
+        },
+        lat: {
+            type: Number,
+            value: 50.109685,
+            observer: 'markerChange'
+        },
+        markerList: {
+            type: Array,
+            value: []
+        }
+    },
+
+    listeners: {
+        "iron-resize": 'updateSize'
+    },
+
+    behaviors: [
+        Polymer.IronResizableBehavior
+    ],
+
+    ready: function() {
+        L.mapbox.accessToken = 'pk.eyJ1IjoibWFya29wZXR6b2xkIiwiYSI6ImNpaTI1dWZkdDAwMjJ2Y20ybjJoanBrazMifQ.Kk4wYYl-eHH6np93mYX0zQ';
+        this.map = L.mapbox.map('map', this.myLayer)
+            .setView([this.lat, this.lon], 9);
+
+        this.push('markerList', [50.109685, 8.666948]);
+
+        this.marker = L.marker([50.109685, 8.666948], {
+            icon: L.mapbox.marker.icon({
+                'marker-color': '#f86767'
+            })
+        });
+
+        this.marker.addTo(this.map);
+
+    },
+
+    layerChanged: function(newV, oldV) {
+        console.log('layer changed to ', newV);
+        if (!this.map) return false;
+        if (!newV) return false;
+        if (!oldV) return false;
+
+        if (this.map.hasLayer(L.mapbox.tileLayer(oldV))) {
+            this.map.removeLayer(L.mapbox.tileLayer(oldV));
+        } else {
+            this.map.addLayer(L.mapbox.tileLayer(newV));
+        }
+    },
+
+    markerChange: function(newV, oldV) {
+        console.log('marker changed to ', newV);
+        if (!this.map) return false;
+        // this.marker.setLatLng(L.latLng(this.lat, this.lon));
+    },
+
+    addMarker: function() {
+        console.log('latlon', this.lat, this.lon);
+
+        this.push('markerList', [this.lat, this.lon]);
+
+        L.marker([this.lat, this.lon], {
+            icon: L.mapbox.marker.icon({
+                'marker-color': '#9b382f'
+            })
+        }).addTo(this.map);
+
+    },
+
+    fitBounds: function() {
+        this.map.fitBounds(this.markerList);
+    },
+
+    updateSize: function() {
+        console.log('resizing');
+        this.map._onResize();
+    }
+
+});
+</script>
